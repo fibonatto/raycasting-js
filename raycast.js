@@ -7,7 +7,7 @@ const WINDOW_HEIGHT = MAP_NUM_ROWS * TILE_SIZE;
 
 const FOV_ANGLE = 60 * (Math.PI / 180);
 
-const WALL_STRIP_WIDTH = 30;
+const WALL_STRIP_WIDTH = 1;
 const NUM_RAYS = WINDOW_WIDTH / WALL_STRIP_WIDTH;
 
 class Map {
@@ -80,13 +80,13 @@ class Player {
     noStroke();
     fill("red");
     circle(this.x, this.y, this.radius);
-    stroke("red");
-    line(
-      this.x,
-      this.y,
-      this.x + Math.cos(this.rotationAngle) * 30,
-      this.y + Math.sin(this.rotationAngle) * 30
-    )
+    // stroke("red");
+    // line(
+    //   this.x,
+    //   this.y,
+    //   this.x + Math.cos(this.rotationAngle) * 30,
+    //   this.y + Math.sin(this.rotationAngle) * 30
+    // )
   }
 }
 
@@ -171,7 +171,7 @@ class Ray {
     xintercept += this.isRayFacingRight ? TILE_SIZE : 0;
 
     // find the y-coordinate of the closest vertical grid intersection 
-    yintercept = player.y + (xintercept - player.x) / Math.tan(this.rayAngle);
+    yintercept = player.y + (xintercept - player.x) * Math.tan(this.rayAngle);
 
     // calculate the increment of xtep and ystep
     xstep = TILE_SIZE;
@@ -206,15 +206,15 @@ class Ray {
 
     // calculate both horizontal and vertical distances and choose the smallest value
     var horzHitDistance = (foundHorzWallHit)
-      ? distenceBetweenPoints(player.x, player.y, horzWallHitX, horzWallHitY)
+      ? distanceBetweenPoints(player.x, player.y, horzWallHitX, horzWallHitY)
       : Number.MAX_VALUE;
     var vertHitDistance = (foundVertWallHit)
-      ? distenceBetweenPoints(player.x, player.y, vertWallHitX, vertWallHitY)
+      ? distanceBetweenPoints(player.x, player.y, vertWallHitX, vertWallHitY)
       : Number.MAX_VALUE;
 
     // only store the smallest of distances
     this.wallHitX = (horzHitDistance < vertHitDistance) ? horzWallHitX : vertWallHitX;
-    this.wallHity = (horzHitDistance < vertHitDistance) ? horzWallHitY : vertWallHitY;
+    this.wallHitY = (horzHitDistance < vertHitDistance) ? horzWallHitY : vertWallHitY;
     this.distance = (horzHitDistance < vertHitDistance) ? horzHitDistance : vertHitDistance;
     this.wasHitVertical = (vertHitDistance < horzHitDistance);
   }
@@ -258,7 +258,7 @@ function keyReleased() {
   if (action) player[action.prop] = 0;
 }
 
-function castALLRays() {
+function castAllRays() {
   var columnId = 0;
 
   // start first ray subtracting half of the FOV
@@ -279,12 +279,12 @@ function castALLRays() {
 function normalizeAngle(angle) {
   angle = angle % (2 * Math.PI);
   if (angle < 0) {
-    angle = (2 * Math.PI + angle);
+    angle = (2 * Math.PI) + angle;
   }
   return angle;
 }
 
-function distenceBetweenPoints(x1, y1, x2, y2) {
+function distanceBetweenPoints(x1, y1, x2, y2) {
   return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
@@ -296,7 +296,7 @@ function setup() {
 function update() {
   // TODO: update all game objcts before we render the next frame
   player.update();
-  castALLRays();
+  castAllRays();
 }
 
 function draw() {
