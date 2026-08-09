@@ -10,7 +10,7 @@ const FOV_ANGLE = 60 * (Math.PI / 180);
 const WALL_STRIP_WIDTH = 1;
 const NUM_RAYS = WINDOW_WIDTH / WALL_STRIP_WIDTH;
 
-const MINIMAP_SCALE_FACTOR = 0.2;
+const MINIMAP_SCALE_FACTOR = 0.12;
 
 class Map {
   constructor() {
@@ -319,7 +319,7 @@ function render3dProjectedWalls() {
     // projected wall height
     var wallStripHeight = (TILE_SIZE / correctWallDistance) * distanceProjectrionPlane;
 
-    fill("rgba(255, 255, 255, 1.0)");
+    fill(`rgba(242, 241, 238, ${200 / ray.distance})`);
     noStroke();
     rect(
       i * WALL_STRIP_WIDTH,
