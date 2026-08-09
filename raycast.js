@@ -14,6 +14,19 @@ const MINIMAP_SCALE_FACTOR = 0.2;
 
 class Map {
   constructor() {
+    // this.grid = [
+    //   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    //   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    //   [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+    //   [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+    //   [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+    //   [1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1],
+    //   [1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1],
+    //   [1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
+    //   [1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1],
+    //   [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+    //   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    // ]
     this.grid = [
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
@@ -298,13 +311,13 @@ function render3dProjectedWalls() {
   for (var i = 0; i < NUM_RAYS; i++) {
     var ray = rays[i];
 
-    var rayDistance = ray.distance
+    var correctWallDistance = ray.distance * Math.cos(ray.rayAngle - player.rotationAngle);
 
     // calculate the distance to the projectrion plane
     var distanceProjectrionPlane = (WINDOW_WIDTH / 2) / Math.tan(FOV_ANGLE / 2)
 
     // projected wall height
-    var wallStripHeight = (TILE_SIZE / rayDistance) * distanceProjectrionPlane;
+    var wallStripHeight = (TILE_SIZE / correctWallDistance) * distanceProjectrionPlane;
 
     fill("rgba(255, 255, 255, 1.0)");
     noStroke();
