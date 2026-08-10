@@ -11,6 +11,7 @@ const WALL_STRIP_WIDTH = 1;
 const NUM_RAYS = WINDOW_WIDTH / WALL_STRIP_WIDTH;
 
 const MINIMAP_SCALE_FACTOR = 0.12;
+// const MINIMAP_SCALE_FACTOR = 1;
 
 class Map {
   constructor() {
@@ -129,7 +130,7 @@ class Ray {
     this.isRayFacingLeft = !this.isRayFacingRight;
   }
 
-  cast(columnId) {
+  cast() {
     var xintercept;
     var yintercept;
     var xstep;
@@ -242,11 +243,21 @@ class Ray {
       ? distanceBetweenPoints(player.x, player.y, vertWallHitX, vertWallHitY)
       : Number.MAX_VALUE;
 
+
     // only store the smallest of distances
-    this.wallHitX = (horzHitDistance < vertHitDistance) ? horzWallHitX : vertWallHitX;
-    this.wallHitY = (horzHitDistance < vertHitDistance) ? horzWallHitY : vertWallHitY;
-    this.distance = (horzHitDistance < vertHitDistance) ? horzHitDistance : vertHitDistance;
-    this.wasHitVertical = (vertHitDistance < horzHitDistance);
+    if (vertHitDistance < horzHitDistance) {
+      this.wallHitX = vertWallHitX;
+      this.wallHitY = vertWallHitY;
+      this.distance = vertHitDistance;
+      this.wasHitVertical = true;
+    } else {
+      this.wallHitX = horzWallHitX;
+      this.wallHitY = horzWallHitY;
+      this.distance = horzHitDistance;
+      this.wasHitVertical = false;
+
+    }
+
   }
 
   render() {
@@ -289,20 +300,17 @@ function keyReleased() {
 }
 
 function castAllRays() {
-  var columnId = 0;
-
   // start first ray subtracting half of the FOV
   var rayAngle = player.rotationAngle - (FOV_ANGLE / 2);
 
   rays = [];
 
   // loop all columns casting the rays 
-  for (var i = 0; i < NUM_RAYS; i++) {
+  for (var col = 0; col < NUM_RAYS; col++) {
     var ray = new Ray(rayAngle);
-    ray.cast(columnId)
+    ray.cast()
     rays.push(ray)
     rayAngle += FOV_ANGLE / NUM_RAYS;
-    columnId++;
   }
 }
 
@@ -319,8 +327,9 @@ function render3dProjectedWalls() {
     // projected wall height
     var wallStripHeight = (TILE_SIZE / correctWallDistance) * distanceProjectrionPlane;
     var alpha = 180 / correctWallDistance;
+    var color = ray.wasHitVertical ? 255 : 180;
 
-    fill(`rgba(242, 241, 238, ${alpha})`);
+    fill(`rgba(${color}, ${color}, ${color}, ${alpha})`);
     noStroke();
     rect(
       i * WALL_STRIP_WIDTH,
