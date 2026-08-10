@@ -318,8 +318,9 @@ function render3dProjectedWalls() {
 
     // projected wall height
     var wallStripHeight = (TILE_SIZE / correctWallDistance) * distanceProjectrionPlane;
+    var alpha = 180 / correctWallDistance;
 
-    fill(`rgba(242, 241, 238, ${200 / ray.distance})`);
+    fill(`rgba(242, 241, 238, ${alpha})`);
     noStroke();
     rect(
       i * WALL_STRIP_WIDTH,
