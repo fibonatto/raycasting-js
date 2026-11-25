@@ -6,15 +6,83 @@ const MAP_NUM_COLS = 41;
 const WORLD_WIDTH = MAP_NUM_COLS * TILE_SIZE;
 const WORLD_HEIGHT = MAP_NUM_ROWS * TILE_SIZE;
 
-// Tamanho fixo da viewport (tela)
-const WINDOW_WIDTH = 960;
-const WINDOW_HEIGHT = 640;
+// // Tamanho fixo da viewport (tela)
+// const WINDOW_WIDTH = 960;
+// const WINDOW_HEIGHT = 640;
+
+// const FOV_ANGLE = 60 * (Math.PI / 180);
+// const WALL_STRIP_WIDTH = 1;
+// const NUM_RAYS = WINDOW_WIDTH / WALL_STRIP_WIDTH;
+
+// Tamanho dinâmico da viewport (janela inteira)
+let WINDOW_WIDTH = window.innerWidth;
+let WINDOW_HEIGHT = window.innerHeight;
 
 const FOV_ANGLE = 60 * (Math.PI / 180);
 const WALL_STRIP_WIDTH = 1;
-const NUM_RAYS = WINDOW_WIDTH / WALL_STRIP_WIDTH;
-
+let NUM_RAYS = Math.floor(WINDOW_WIDTH / WALL_STRIP_WIDTH);
 var gameWon = false;
+
+var crtLayer;
+var crtShader;
+
+const VERT_SRC = `
+attribute vec3 aPosition;
+attribute vec2 aTexCoord;
+varying vec2 vTexCoord;
+
+void main() {
+  vTexCoord = aTexCoord;
+  vec4 positionVec4 = vec4(aPosition, 1.0);
+  positionVec4.xy = positionVec4.xy * 2.0 - 1.0;
+  gl_Position = positionVec4;
+}
+`;
+
+const FRAG_SRC = `
+precision mediump float;
+
+uniform sampler2D u_tex;
+uniform vec2 u_res;
+varying vec2 vTexCoord;
+
+vec2 curve(vec2 uv) {
+  uv = uv * 2.0 - 1.0;
+
+  // Compensa o esticamento nas bordas para evitar faixa preta
+  // (1.0 / 6.0)^2 ≈ 0.0277 -> divide por ~1.03 no X
+  // (1.0 / 4.0)^2 = 0.0625  -> divide por ~1.065 no Y
+  uv /= vec2(1.03, 1.065);
+
+  vec2 offset = abs(uv.yx) / vec2(6.0, 4.0);
+  uv = uv + uv * offset * offset;
+  return uv * 0.5 + 0.5;
+}
+
+void main() {
+  // Inverte o eixo Y da textura do p5.js
+  vec2 uv = vec2(vTexCoord.x, 1.0 - vTexCoord.y);
+  uv = curve(uv);
+
+  // Garante que a aberração cromática não vaze nas extremidades
+  vec2 uvR = clamp(vec2(uv.x + 0.002, uv.y), 0.0, 1.0);
+  vec2 uvG = clamp(uv, 0.0, 1.0);
+  vec2 uvB = clamp(vec2(uv.x - 0.002, uv.y), 0.0, 1.0);
+
+  float r = texture2D(u_tex, uvR).r;
+  float g = texture2D(u_tex, uvG).g;
+  float b = texture2D(u_tex, uvB).b;
+  vec3 col = vec3(r, g, b);
+
+  float scanline = sin(uv.y * u_res.y * 3.14159265) * 0.12;
+  col -= scanline;
+
+  float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+  col *= pow(16.0 * max(vig, 0.0), 0.15);
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
 
 class Map {
   constructor() {
@@ -481,7 +549,30 @@ function distanceBetweenPoints(x1, y1, x2, y2) {
 }
 
 function setup() {
+  WINDOW_WIDTH = windowWidth;
+  WINDOW_HEIGHT = windowHeight;
+  NUM_RAYS = Math.floor(WINDOW_WIDTH / WALL_STRIP_WIDTH);
+
   createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
+  pixelDensity(1);
+
+  crtLayer = createGraphics(WINDOW_WIDTH, WINDOW_HEIGHT, WEBGL);
+  crtLayer.pixelDensity(1);
+  crtShader = crtLayer.createShader(VERT_SRC, FRAG_SRC);
+}
+
+function windowResized() {
+  WINDOW_WIDTH = windowWidth;
+  WINDOW_HEIGHT = windowHeight;
+  NUM_RAYS = Math.floor(WINDOW_WIDTH / WALL_STRIP_WIDTH);
+
+  resizeCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+  // Recria o buffer WebGL no novo tamanho da tela
+  crtLayer.remove();
+  crtLayer = createGraphics(WINDOW_WIDTH, WINDOW_HEIGHT, WEBGL);
+  crtLayer.pixelDensity(1);
+  crtShader = crtLayer.createShader(VERT_SRC, FRAG_SRC);
 }
 
 function update() {
@@ -511,4 +602,12 @@ function draw() {
     text("Pressione ENTER ou R para um novo labirinto", WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 + 25);
     textAlign(LEFT, BASELINE);
   }
+
+  // Pós-processamento CRT
+  crtLayer.shader(crtShader);
+  crtShader.setUniform('u_tex', this._renderer);
+  crtShader.setUniform('u_res', [WINDOW_WIDTH, WINDOW_HEIGHT]);
+  crtLayer.rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+  image(crtLayer, 0, 0);
 }
